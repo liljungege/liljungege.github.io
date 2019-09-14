@@ -1302,11 +1302,12 @@ pre .javascript .function {
   margin-left: 5px;
 }
 .post-eof {
-  display: block;
-  width: 0%;
-  height: 0px;
   background: #ccc;
+  height: 1px;
+  margin: 80px auto 60px;
   text-align: center;
+  width: 8%;
+  display: block;
 }
 article:last-child .post-eof {
   display: none;
@@ -1690,7 +1691,7 @@ article:last-child .post-eof {
 }
 .links-of-author a::before,
 .links-of-author span.exturl::before {
-  background: #f9dbdb;
+  background: #8afc0a;
   border-radius: 50%;
   content: ' ';
   display: inline-block;
