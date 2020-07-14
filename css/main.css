@@ -1699,7 +1699,7 @@ article:last-child .post-eof {
 }
 .links-of-author a::before,
 .links-of-author span.exturl::before {
-  background: #243236;
+  background: #c28112;
   border-radius: 50%;
   content: ' ';
   display: inline-block;
