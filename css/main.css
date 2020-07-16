@@ -1699,7 +1699,7 @@ article:last-child .post-eof {
 }
 .links-of-author a::before,
 .links-of-author span.exturl::before {
-  background: #c28112;
+  background: #6fd925;
   border-radius: 50%;
   content: ' ';
   display: inline-block;
@@ -1877,7 +1877,6 @@ article:last-child .post-eof {
 .post-toc .nav-item {
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
   line-height: 1.8;
 }
 .post-toc .nav .nav-child {

@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+
+
+
+
+
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 3.9.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=7.4.0">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.ico?v=7.4.0">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=7.4.0">
+  <link rel="mask-icon" href="/images/logo.svg?v=7.4.0" color="#222">
+
+<link rel="stylesheet" href="/css/main.css?v=7.4.0">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|menlo:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-center-atom.min.css?v=1.0.2">
+  <script src="/lib/pace/pace.min.js?v=1.0.2"></script>
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '7.4.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"always","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: true,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: '复制',
+      copy_success: '复制成功',
+      copy_failure: '复制失败'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="本篇文章主要介绍Redis高级内容，包括Redis.conf配置文件的详解，Redis的持久化技术，RDB、AOF，Redis的订阅发布，Redis的主从复制，Redis的哨兵模式，Redis缓存穿透和雪崩。">
+<meta name="keywords" content="Redis,RDB,AOF,主从复制">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Redis高级">
+<meta property="og:url" content="http://yoursite.com/2020/07/16/Redis高级/index.html">
+<meta property="og:site_name" content="liljungege&#39;s Blog">
+<meta property="og:description" content="本篇文章主要介绍Redis高级内容，包括Redis.conf配置文件的详解，Redis的持久化技术，RDB、AOF，Redis的订阅发布，Redis的主从复制，Redis的哨兵模式，Redis缓存穿透和雪崩。">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https://liljungege-1302638024.cos.ap-shanghai.myqcloud.com/20200714140309.png">
+<meta property="og:image" content="https://liljungege-1302638024.cos.ap-shanghai.myqcloud.com/20200714140236.png">
+<meta property="og:image" content="https://liljungege-1302638024.cos.ap-shanghai.myqcloud.com/20200714212225.png">
+<meta property="og:image" content="https://liljungege-1302638024.cos.ap-shanghai.myqcloud.com/20200714230307.png">
+<meta property="og:image" content="https://liljungege-1302638024.cos.ap-shanghai.myqcloud.com/20200714232002.png">
+<meta property="og:image" content="https://liljungege-1302638024.cos.ap-shanghai.myqcloud.com/20200715113818.png">
+<meta property="og:image" content="https://liljungege-1302638024.cos.ap-shanghai.myqcloud.com/20200715142308.png">
+<meta property="og:image" content="https://liljungege-1302638024.cos.ap-shanghai.myqcloud.com/20200716105213.png">
+<meta property="og:image" content="https://liljungege-1302638024.cos.ap-shanghai.myqcloud.com/20200715145711.png">
+<meta property="og:image" content="https://liljungege-1302638024.cos.ap-shanghai.myqcloud.com/20200715145737.png">
+<meta property="og:image" content="https://liljungege-1302638024.cos.ap-shanghai.myqcloud.com/20200715150130.png">
+<meta property="og:updated_time" content="2020-07-16T03:48:39.213Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Redis高级">
+<meta name="twitter:description" content="本篇文章主要介绍Redis高级内容，包括Redis.conf配置文件的详解，Redis的持久化技术，RDB、AOF，Redis的订阅发布，Redis的主从复制，Redis的哨兵模式，Redis缓存穿透和雪崩。">
+<meta name="twitter:image" content="https://liljungege-1302638024.cos.ap-shanghai.myqcloud.com/20200714140309.png">
+  <link rel="canonical" href="http://yoursite.com/2020/07/16/Redis高级/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>Redis高级 | liljungege's Blog</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-CN">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">liljungege's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="切换导航栏">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+      
+      
+      
+        
+        <li class="menu-item menu-item-home">
+      
+    
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>首页</a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-tags">
+      
+    
+      
+    
+
+    <a href="/tags/" rel="section"><i class="menu-item-icon fa fa-fw fa-tags"></i> <br>标签<span class="badge">12</span></a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-categories">
+      
+    
+      
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>分类<span class="badge">4</span></a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-archives">
+      
+    
+      
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>归档<span class="badge">6</span></a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+            
+
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+      <article itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block post">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/16/Redis高级/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="liljungege">
+      <meta itemprop="description" content="珍惜当下，展望未来">
+      <meta itemprop="image" content="/images/touxiang.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liljungege's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">Redis高级
+
+          
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              
+                
+              
+
+              <time title="创建时间：2020-07-16 11:41:40 / 修改时间：11:48:39" itemprop="dateCreated datePublished" datetime="2020-07-16T11:41:40+08:00">2020-07-16</time>
+            </span>
+          
+            
+
+            
+          
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/数据库/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a></span>
+
+                
+                
+                  ，
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/数据库/Redis/" itemprop="url" rel="index"><span itemprop="name">Redis</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>本篇文章主要介绍Redis高级内容，包括Redis.conf配置文件的详解，Redis的持久化技术，RDB、AOF，Redis的订阅发布，Redis的主从复制，Redis的哨兵模式，Redis缓存穿透和雪崩。</p>
+<a id="more"></a>
+
+<h1 id="Redis-conf详解"><a href="#Redis-conf详解" class="headerlink" title="Redis.conf详解"></a>Redis.conf详解</h1><p>启动的时候，就通过配置文件启动。</p>
+<h2 id="单位"><a href="#单位" class="headerlink" title="单位"></a>单位</h2><p><img src="https://liljungege-1302638024.cos.ap-shanghai.myqcloud.com/20200714140309.png" alt></p>
+<p>配置文件单位对大小写不敏感。</p>
+<h2 id="包含"><a href="#包含" class="headerlink" title="包含"></a>包含</h2><p><img src="https://liljungege-1302638024.cos.ap-shanghai.myqcloud.com/20200714140236.png" alt></p>
+<p>一个配置文件可以包含多个配置文件。</p>
+<h2 id="网络"><a href="#网络" class="headerlink" title="网络"></a>网络</h2><p>绑定的ip，默认只能本地访问，若果需要远程访问可以改成<code>bind *</code>。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">bind</span> 127.0.0.1</span><br></pre></td></tr></table></figure>
+
+<p>是否是受保护模式的：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">protected-mode yes</span><br></pre></td></tr></table></figure>
+
+<p>默认端口，6379，如果有需要可以修改：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">port 6379</span><br></pre></td></tr></table></figure>
+
+<h2 id="通用"><a href="#通用" class="headerlink" title="通用"></a>通用</h2><p>以守护方式运行，默认是no，我们需要改成yes。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">daemonize yes</span><br></pre></td></tr></table></figure>
+
+<p>如果以后台方式运行，就需要指定一个pid文件。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pidfile /var/run/redis_6379.pid</span><br></pre></td></tr></table></figure>
+
+<p>日志级别</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Specify the server verbosity level.</span></span><br><span class="line"><span class="comment"># This can be one of:</span></span><br><span class="line"><span class="comment"># debug (a lot of information, useful for development/testing)</span></span><br><span class="line"><span class="comment"># verbose (many rarely useful info, but not a mess like the debug level)</span></span><br><span class="line"><span class="comment"># notice (moderately verbose, what you want in production probably) # 生产环境适用</span></span><br><span class="line"><span class="comment"># warning (only very important / critical messages are logged)</span></span><br><span class="line">loglevel notice</span><br><span class="line">logfile <span class="string">""</span> <span class="comment"># 日志的文件位置名</span></span><br><span class="line">databases 16 <span class="comment"># 默认有16个数据库</span></span><br><span class="line">always-show-logo yes <span class="comment"># 是否总是显示logo</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="快照"><a href="#快照" class="headerlink" title="快照"></a>快照</h2><p>持久化要用到，在规定时间内，执行了多少次操作，则会持久化到文件 <code>.rdb</code> <code>.aof</code>。</p>
+<p>redis是内存数据库，如果没有持久化，数据断电会丢失。</p>
+<p>这里可以自己定义大小。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">save 900 1 <span class="comment"># 900s内至少一个地方有变动就进行持久化操作</span></span><br><span class="line">save 300 10 <span class="comment"># 300s内至少有10个地方有变动就进行持久化操作</span></span><br><span class="line">save 60 10000 <span class="comment"># 60s内至少有10000个地方有变动就进行持久化操作，高并发</span></span><br><span class="line"></span><br><span class="line">stop-writes-on-bgsave-error yes <span class="comment"># 持久化出错是否停止工作</span></span><br><span class="line">rdbcompression yes <span class="comment"># 是否压缩rdb文件，需要消耗一定的CPU资源</span></span><br><span class="line">rdbchecksum yes <span class="comment"># 保存rdb文件时，进行错误校验</span></span><br><span class="line">dir ./ <span class="comment"># rdb文件保存目录</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="安全"><a href="#安全" class="headerlink" title="安全"></a>安全</h2><p>设置密码，Redis默认没有密码。</p>
+<p>一般情况用<code>config get requirepass</code>设置密码。</p>
+<p>设置完后，使用<code>auth 密码</code>进行登录。</p>
+<h2 id="客户端限制"><a href="#客户端限制" class="headerlink" title="客户端限制"></a>客户端限制</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">maxclients 10000 <span class="comment"># 设置能连接上Redis的客户端数量</span></span><br><span class="line">maxmemory &lt;bytes&gt; <span class="comment"># Redis配置最大的内存容量</span></span><br><span class="line">maxmemory-policy noeviction <span class="comment"># 内存到达上限的处理策略</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="AOF配置"><a href="#AOF配置" class="headerlink" title="AOF配置"></a>AOF配置</h2><p>默认不开启，默认使用rdb持久化，在大部分情况下，rdb完全够用。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">appendonly no</span><br><span class="line">appendfilename <span class="string">"appendonly.aof"</span> <span class="comment"># 持久化文件名字</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># appendfsync always # 每次修改都要同步，消耗性能</span></span><br><span class="line">appendfsync everysec <span class="comment"># 每秒执行一次同步，但是可能会丢失这1s的数据</span></span><br><span class="line"><span class="comment"># appendfsync no # 不同步，这个时候操作系统自己同步数据，速度最快</span></span><br></pre></td></tr></table></figure>
+
+<h1 id="Redis持久化"><a href="#Redis持久化" class="headerlink" title="Redis持久化"></a>Redis持久化</h1><p>Redis是内存数据库，如果不将内存中的数据保存到硬盘，那么一旦服务器进程退出，服务器中的数据库状态也会消失，所以Redis提供了持久化配置</p>
+<h2 id="RDB-Redis-DataBase"><a href="#RDB-Redis-DataBase" class="headerlink" title="RDB(Redis DataBase)"></a>RDB(Redis DataBase)</h2><p>在指定的时间间隔内将内存中的数据集快照写入磁盘，恢复时将快照文件直接读到内存中。</p>
+<p>Redis会单独创建(fork)一个子进程来进行持久化，会先将数据写入一个临时文件中，待持久化过程结束了，再用这个临时文件替换上次持久化好的文件，整个过程中，主进程是不进行任何IO操作的，就确保了高性能。</p>
+<p>有时候，在生产环境，会对rdb进行备份。</p>
+<p><strong>优点</strong>：如果需要进行大规模数据的恢复，且对数据恢复的完整性不是那么敏感，那么RDB方式比AOF方式更加高效。</p>
+<p><strong>缺点</strong>：最后一次持久化的数据可能丢失，需要一定的时间间隔进行操作，fork子进程时，会占用一定的内存空间。</p>
+<p>默认为RDB模式，一般情况下不需要修改。</p>
+<p><font color="red">rdb保存的文件为<code>dump.rdb</code></font>，在配置文件中的快照中进行配置。</p>
+<blockquote>
+<p>测试rdb</p>
+</blockquote>
+<p><img src="https://liljungege-1302638024.cos.ap-shanghai.myqcloud.com/20200714212225.png" alt></p>
+<p>在redis <code>shutdown</code>之后数据还是没有丢失</p>
+<blockquote>
+<p>触发机制</p>
+</blockquote>
+<ol>
+<li>save规则满足的情况下，会自动触发rdb规则</li>
+<li>执行了flushall命令，也会触发rdb规则</li>
+<li>退出redis，也会触发rdb规则</li>
+</ol>
+<p>备份会自动生成dump.rdb文件。</p>
+<blockquote>
+<p>恢复rdb文件</p>
+</blockquote>
+<ol>
+<li>只需要将rdb文件放在我们redis启动目录就可以了，redis启动的时候会自动检查dump.rdb文件，redis会恢复其中的数据。</li>
+<li>查看需要存放的位置，如果在这个目录下存在dump.rdb文件，那么在redis启动的时候会自动恢复其中的数据。</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">127.0.0.1:6379&gt; config get dir</span><br><span class="line">1) <span class="string">"dir"</span></span><br><span class="line">2) <span class="string">"/usr/local/bin"</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="AOF-Append-Only-File"><a href="#AOF-Append-Only-File" class="headerlink" title="AOF(Append Only File)"></a>AOF(Append Only File)</h2><p>简单来说，就是将我们的命令全部记录下来，恢复的时候将命令全部再执行一遍。</p>
+<p>以日志形式来记录每个写操作，将Redis执行过的所有指令记录下来(写操作不记录)，只许追加写文件，但不可以改写文件，Redis启动之初会读取该文件重新构建数据，换言之，redis重启的话就根据日志文件的内容将写指令从前到尾执行一次以完成数据的恢复工作。</p>
+<p><font color="red">aof保存的是<code>appendonly.aof</code>文件</font>。</p>
+<p><img src="https://liljungege-1302638024.cos.ap-shanghai.myqcloud.com/20200714230307.png" alt></p>
+<p>默认不开启，设置如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">appendonly yes</span><br></pre></td></tr></table></figure>
+
+<p>重启Redis就可以生效，就可以在<code>/usr/local/bin</code>目录中看到<code>appendonly.aof</code></p>
+<blockquote>
+<p>破坏appendonly.aof文件</p>
+</blockquote>
+<p>会出现连接失败</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost-01 bin]<span class="comment"># redis-cli -p 6379</span></span><br><span class="line">Could not connect to Redis at 127.0.0.1:6379: Connection refused</span><br></pre></td></tr></table></figure>
+
+<p>可以用<code>redis-check-aof</code>修复配置文件。</p>
+<blockquote>
+<p>重写规则</p>
+</blockquote>
+<p>aof默认就是文件的无限追加，文件会越来越大。</p>
+<p><img src="https://liljungege-1302638024.cos.ap-shanghai.myqcloud.com/20200714232002.png" alt></p>
+<p>如果aof文件大于64M，就会fork一个新的进程来进行我们文件的重写。</p>
+<blockquote>
+<p>优点和缺点</p>
+</blockquote>
+<p>优点：</p>
+<ol>
+<li>每一次修改都同步，让文件的完整性更好</li>
+<li>每秒同步一次，只会丢失那一秒的数据</li>
+<li>从不同步，效率最高</li>
+</ol>
+<p>缺点：</p>
+<ol>
+<li>相对于数据文件，aof远远大于rdb，修复的速度也比rdb慢</li>
+<li>aof运行效率慢，是IO操作</li>
+</ol>
+<h1 id="Redis发布订阅"><a href="#Redis发布订阅" class="headerlink" title="Redis发布订阅"></a>Redis发布订阅</h1><p>Redis发布订阅是一种<font color="red">消息通信模式</font>，发送者(pub)发送消息，订阅者(sub)接收消息。比如说微博，微信的关注系统。</p>
+<p>Redis客户端可以订阅任意数量的频道。</p>
+<p>三个角色：消息发送者、频道、消息订阅者。</p>
+<h2 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h2><blockquote>
+<p>消息订阅者</p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">127.0.0.1:6379&gt; subscribe liljungege</span><br><span class="line">Reading messages... (press Ctrl-C to quit)</span><br><span class="line">1) <span class="string">"subscribe"</span></span><br><span class="line">2) <span class="string">"liljungege"</span></span><br><span class="line">3) (<span class="built_in">integer</span>) 1</span><br><span class="line">1) <span class="string">"message"</span></span><br><span class="line">2) <span class="string">"liljungege"</span></span><br><span class="line">3) <span class="string">"hello"</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>消息发送者</p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">127.0.0.1:6379&gt; publish liljungege hello</span><br><span class="line">(<span class="built_in">integer</span>) 1</span><br></pre></td></tr></table></figure>
+
+<p>订阅之后，一旦消息发送者发送消息，消息订阅者就能收到他发送的内容。</p>
+<h2 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h2><p>通过subscribe命令订阅某频道后，redis-server中维护了一个字典，字典的键就是一个频道，字典的值就是一个链表，链表中保存了所有订阅这个频道的客户端。subscribe命令的关键，就是将客户端添加到给定的频道订阅链表中。</p>
+<p>通过publish向频道订阅者发布消息，redis-server会使用给定的频道作为键，在它所维护的频道字典中查找订阅了这个频道的所有客户端的链表，遍历这个链表，将消息发布给所有订阅者。</p>
+<p>使用场景：</p>
+<ul>
+<li>实时消息系统</li>
+<li>实时聊天(频道当做聊天室，将信息回显给所有人即可)</li>
+<li>订阅、关注系统</li>
+</ul>
+<p>稍微复杂的场景就会使用消息中间件MQ。</p>
+<h1 id="Redis主从复制"><a href="#Redis主从复制" class="headerlink" title="Redis主从复制"></a>Redis主从复制</h1><h2 id="概念"><a href="#概念" class="headerlink" title="概念"></a>概念</h2><p>主从复制，就是将一台Redis服务器的数据，复制到其他的Redis服务器。前者称为主节点(master/leader)，后者称为从节点(slave/follower)；数据的复制都是单向的，只能由主节点到从节点。Master以写为主，Slave以读为主。</p>
+<p><font color="red">默认情况下，每台Redis服务器都是主节点</font>，且一个主节点可以有多个从节点(或没有从节点)，但一个从节点只能有一个主节点。</p>
+<blockquote>
+<p>作用：</p>
+</blockquote>
+<ol>
+<li>数据冗余：主从幅值实现了数据的热备份，是持久化之外的一种数据冗余方式。</li>
+<li>故障恢复：当主节点出现问题，就可以由从节点提供服务，实现快速的故障恢复，是一种服务的冗余。</li>
+<li>负载均衡：在主从复制的基础上，配合读写分离，可以由主节点提供写服务，由从节点提供读服务，分担服务器负载；尤其是在写多读少的场景下，通过多个从节点分担读负载，可以大大提高Redis服务器的并发量。</li>
+<li>高可用(集群)基石：主从复制还是哨兵和集群能够实施的基础，因此说主从复制是Redis高可用的基础。</li>
+</ol>
+<blockquote>
+<p>一般来说，要将Redis运用在工程项目中，不能只用一台Redis，可能会出现宕机情况，所以一般一主二从</p>
+</blockquote>
+<ol>
+<li>从结构上，单个Redis服务器会发生单点故障，并且一台服务器要处理所有的请求负载，压力较大。</li>
+<li>从容量上，单个Redis服务器内存容量有限，一般来说，单台Redis最大使用内存不应该超过20G。</li>
+</ol>
+<p>主从复制，读写分离，80%的情况下都在读，所以主从复制可以缓解服务器家里，架构中至少用一主二从。</p>
+<h2 id="环境配置"><a href="#环境配置" class="headerlink" title="环境配置"></a>环境配置</h2><p>只配置从库，不用配置主库</p>
+<blockquote>
+<p>查看Redis服务器信息：</p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">127.0.0.1:6379&gt; info replication</span><br><span class="line"><span class="comment"># Replication</span></span><br><span class="line">role:master <span class="comment"># 角色</span></span><br><span class="line">connected_slaves:0 <span class="comment"># 从机个数</span></span><br><span class="line">master_replid:9594e5572a4b5a2f865b095e57105509277351f4</span><br><span class="line">master_replid2:0000000000000000000000000000000000000000</span><br><span class="line">master_repl_offset:0</span><br><span class="line">second_repl_offset:-1</span><br><span class="line">repl_backlog_active:0</span><br><span class="line">repl_backlog_size:1048576</span><br><span class="line">repl_backlog_first_byte_offset:0</span><br><span class="line">repl_backlog_histlen:0</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>伪集群搭建</p>
+</blockquote>
+<p>复制三个配置文件，然后修改对应的信息，如端口号，pid文件名，日志文件名，rdb文件名。</p>
+<p>修改完后启动三个Redis服务器，可以通过进程信息查看：</p>
+<p><img src="https://liljungege-1302638024.cos.ap-shanghai.myqcloud.com/20200715113818.png" alt></p>
+<h2 id="一主二从"><a href="#一主二从" class="headerlink" title="一主二从"></a>一主二从</h2><p><font color="red">默认情况下，每台Redis服务器都是主节点。</font>一般情况下，只需要配置从机，不需要配置主机。</p>
+<blockquote>
+<p>配置从机：</p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">127.0.0.1:6380&gt; slaveof 127.0.0.1 6379</span><br><span class="line">OK</span><br></pre></td></tr></table></figure>
+
+<p>如果两个从机都配置完了，主机：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">127.0.0.1:6379&gt; info replication</span><br><span class="line"><span class="comment"># Replication</span></span><br><span class="line">role:master</span><br><span class="line">connected_slaves:2</span><br><span class="line">slave0:ip=127.0.0.1,port=6380,state=online,offset=1624,lag=1</span><br><span class="line">slave1:ip=127.0.0.1,port=6381,state=online,offset=1624,lag=1</span><br><span class="line">master_replid:f32aed4b1942295b383a80dacc02956c0eba13fd</span><br><span class="line">master_replid2:0000000000000000000000000000000000000000</span><br><span class="line">master_repl_offset:1624</span><br><span class="line">second_repl_offset:-1</span><br><span class="line">repl_backlog_active:1</span><br><span class="line">repl_backlog_size:1048576</span><br><span class="line">repl_backlog_first_byte_offset:1</span><br><span class="line">repl_backlog_histlen:1624</span><br></pre></td></tr></table></figure>
+
+<p>真实的主从配置应该在配置文件中配置，这样是永久生效的。</p>
+<blockquote>
+<p>细节</p>
+</blockquote>
+<p>主机可以写，从机只能读。主机中的所有信息和数据，都会被从机保存。</p>
+<p>主机断开连接，从机依旧连接到主机，主机如果重新连接，从机依旧可以获取到主机新写进去的信息。</p>
+<p>如果使用命令行，来配置主从，如果重启了就会变回主机，不能拿到原主机中的数据，但是若将其再设置为从机，就又能拿到主机中的数据了。</p>
+<blockquote>
+<p>复制原理</p>
+</blockquote>
+<p>Slave启动成功连接到Master后，会发送一个sync命令。</p>
+<p>Master接到命令，启动后台的存盘进程，同时收集所有接收到的用于修改数据集命令，在后台进程执行完毕之后，master将传送整个数据文件到slave，并完成一次完全同步。</p>
+<p><strong>全量复制</strong>：从机接收到数据库文件数据后，将其存盘并加载到内存中。</p>
+<p><strong>增量复制</strong>：主机继续将新的所有收集到的修改命令依次传给从机，完成同步。</p>
+<p>只要重新连接Master，全量复制将被自动执行，数据一定可以在从机中看到。</p>
+<h2 id="毛毛虫型模型"><a href="#毛毛虫型模型" class="headerlink" title="毛毛虫型模型"></a>毛毛虫型模型</h2><p>此时中间那台服务器依旧是从节点，无法写入。</p>
+<p><img src="https://liljungege-1302638024.cos.ap-shanghai.myqcloud.com/20200715142308.png" alt></p>
+<p>如果主机断开，从机可以通过手动配置成主机(不考虑哨兵模式)。如果这时主机重新连接，那就只能重新配置主从。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">127.0.0.1:6381&gt; slaveof no one</span><br><span class="line">OK</span><br><span class="line">127.0.0.1:6381&gt; info replication</span><br><span class="line"><span class="comment"># Replication</span></span><br><span class="line">role:master</span><br><span class="line">connected_slaves:0</span><br><span class="line">master_replid:456f265c77549eb941f6729968435abd54411913</span><br><span class="line">master_replid2:40a0c838541dc447fc5daa8292cae3a54608fa46</span><br><span class="line">master_repl_offset:11305</span><br><span class="line">second_repl_offset:11306</span><br><span class="line">repl_backlog_active:1</span><br><span class="line">repl_backlog_size:1048576</span><br><span class="line">repl_backlog_first_byte_offset:1</span><br><span class="line">repl_backlog_histlen:11305</span><br></pre></td></tr></table></figure>
+
+<h1 id="哨兵模式"><a href="#哨兵模式" class="headerlink" title="哨兵模式"></a>哨兵模式</h1><p>自动选取主机的模式。</p>
+<h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>当主机宕机后，需要手动把一台服务器切换成主服务器，这需要人工干预，费事费力，还会造成一段时间内服务不可用。所以更多时候考虑使用哨兵模式，Redis从2.8开始就正式提供了Sentinel(哨兵)架构来解决这个问题。</p>
+<p>能够后台监控主机是否故障，若主机发生了故障则根据投票数<font color="red">自动将从机转换为主机</font>。</p>
+<p>哨兵模式是一种特殊的模式，首先Redsi提供了哨兵的命令，哨兵是一个独立的进程，作为进程，他会独立运行。其原理是<strong>哨兵通过发送命令，等待Redis服务器响应，从而监控运行的多个Redis实例</strong>。</p>
+<p><img src="https://liljungege-1302638024.cos.ap-shanghai.myqcloud.com/20200716105213.png" alt></p>
+<p>哨兵的两个作用：</p>
+<ol>
+<li>通过发送命令，让Redis服务器返回其运行状态，包括主服务器和从服务器，以实施监控。</li>
+<li>当哨兵监测到Master宕机，会自动将Slave切换成Master，然后通过<strong>发布订阅模式</strong>通知其他的从服务器，修改配置文件，让它们切换主机。</li>
+</ol>
+<p>只有一个哨兵监控，可能会出现问题，所以可以使用多个哨兵进行监控，各个哨兵之间还会进行监控，形成<strong>多哨兵模式</strong>。</p>
+<h2 id="测试-1"><a href="#测试-1" class="headerlink" title="测试"></a>测试</h2><p>目前状态：一主二从。</p>
+<blockquote>
+<p>新建sentinel.conf文件</p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># sentinel monitor 被监控主机名称 host port 投票</span></span><br><span class="line">sentinel monitor myredis 127.0.0.1 6379 1</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>启动哨兵</p>
+</blockquote>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost-01 bin]# redis-sentinel jconfig/sentinel.conf</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://liljungege-1302638024.cos.ap-shanghai.myqcloud.com/20200715145711.png" alt></p>
+<p><img src="https://liljungege-1302638024.cos.ap-shanghai.myqcloud.com/20200715145737.png" alt></p>
+<p>当主机宕机后，其中一台从机会变成主机。</p>
+<blockquote>
+<p>哨兵日志</p>
+</blockquote>
+<p><img src="https://liljungege-1302638024.cos.ap-shanghai.myqcloud.com/20200715150130.png" alt></p>
+<p>failover：故障转移</p>
+<p>如果此时主机重新连接，只能成为新主机下的从机，这就是哨兵模式的规则。</p>
+<blockquote>
+<p>哨兵模式</p>
+</blockquote>
+<p>优点：</p>
+<ol>
+<li>哨兵集群，基于主从复制模式，所有主从配置的优点，它全有。</li>
+<li>主从可以切换，故障可以转移，系统的可用性会更好。</li>
+<li>哨兵模式就是主从模式的升级，手动到自动，更加健壮。</li>
+</ol>
+<p>缺点：</p>
+<ol>
+<li>Redis不好在线扩容，集群容量一旦到达上限，在线扩容非常麻烦。</li>
+<li>实现哨兵模式的配置很麻烦，里面有很多选择</li>
+</ol>
+<h1 id="Redis缓存穿透和雪崩"><a href="#Redis缓存穿透和雪崩" class="headerlink" title="Redis缓存穿透和雪崩"></a>Redis缓存穿透和雪崩</h1><p>Redis缓存的使用，极大的提升了应用程序的性能和效率，特别是数据查询方面。但同时，也会带来一些问题。其中，最重要的问题就是数据的一致性问题，如果对数据的一致性要求很高，就不能使用缓存。</p>
+<h2 id="缓存穿透"><a href="#缓存穿透" class="headerlink" title="缓存穿透"></a>缓存穿透</h2><p>在缓存中大面积查不到要查询的数据</p>
+<blockquote>
+<p>概念</p>
+</blockquote>
+<p>用户想要查询一个数据，发现Redis内存数据库中没有，也就是缓存没有命中，于是向持久层数据库查询，发现也没有，于是本次查询失败。当用户很多的时候，缓存都没有命中，于是都去请求持久层数据库，这会给持久层数据库带来很大压力，就相当于出现了缓存穿透。</p>
+<blockquote>
+<p>解决方案</p>
+</blockquote>
+<p><strong>布隆过滤器</strong></p>
+<p>布隆过滤器是一种数据结构，对所有可能查询的参数以hash形式存储，在控制层先进行校验，不符合则丢弃，从而避免了对底层存储系统的查询压力</p>
+<p><strong>缓存空对象</strong></p>
+<p>当存储层不命中后，即使返回的是空对象也将其缓存起来，同时设置一个过期时间，之后再访问这个数据将会从缓存中获取，保护后端资源。</p>
+<p>这种方法存在两个问题：</p>
+<ol>
+<li>如果控制能够被缓存起来，那么会占用一定的缓存空间，缓存就需要更多的存储空间。</li>
+<li>即使对空值设置了过期时间，还是会存在缓存层和存储层会有一段时间窗口的不一致，这对于需要保持一致性的业务会有影响。</li>
+</ol>
+<h2 id="缓存击穿"><a href="#缓存击穿" class="headerlink" title="缓存击穿"></a>缓存击穿</h2><p>微博热搜导致宕机。</p>
+<blockquote>
+<p>概述</p>
+</blockquote>
+<p>缓存击穿，是指一个key非常热点，在不停的扛着高并发，大并发集中对这一个点进行访问，当这个key在失效的瞬间，持续的大并发会穿破缓存，直接请求数据库。</p>
+<p>当某个key在过期瞬间，有大量的请求并发访问，这类数据一般是热点数据，由于缓存过期，会同时访问数据库来查询最新数据，并且回写缓存，会导致数据库瞬间压力过大。</p>
+<blockquote>
+<p>解决方案</p>
+</blockquote>
+<p><strong>设置热点数据永不过期</strong></p>
+<p>从缓存层面来看，没有设置过期时间，所以不会出现热点key过期后产生的问题。</p>
+<p><strong>加互斥锁</strong></p>
+<p>分布式锁：使用分布式锁，保证对于每个key同时只有一个线程去查询后端服务，其他线程没有获得分布式锁的权限，因此只能等待。这种方式将高并发的压力转移到了分布式锁，因此对分布式锁的考验很大。</p>
+<h2 id="缓存雪崩"><a href="#缓存雪崩" class="headerlink" title="缓存雪崩"></a>缓存雪崩</h2><blockquote>
+<p>概念</p>
+</blockquote>
+<p>缓存雪崩，是指在某一个时间段，缓存集中过期失效，Redis宕机。</p>
+<blockquote>
+<p>解决方案</p>
+</blockquote>
+<p><strong>Redis高可用</strong></p>
+<p>搭建Redis集群，异地多活。</p>
+<p><strong>限流降级</strong></p>
+<p>在缓存失效后，通过加锁或者队列来控制读数据库写缓存的线程数量。比如某个key只允许一个线程查询数据和写缓存，其他线程等待。</p>
+<p><strong>数据预热</strong></p>
+<p>在正式部署之前，把可能的数据先预先访问一遍，这样部分可能大量访问的数据就会加载到缓存中，在即将发生大并发访问前手动触发加载缓存不同的key，设置不同的过期时间，让缓存失效的时间点尽量均匀。</p>
+
+    </div>
+
+    
+    
+    <div>
+    
+        <div style="text-align:center;color: #ccc;font-size:14px;">
+        -------------本文结束 <i class="fa fa-paw"></i> 感谢您的阅读-------------
+        </div>
+    
+</div>
+        
+      
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>liljungege</li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://yoursite.com/2020/07/16/Redis高级/" title="Redis高级">http://yoursite.com/2020/07/16/Redis高级/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/cc by-nc-sa 4.0/4.0/" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！</li>
+</ul>
+</div>
+
+      
+
+      <footer class="post-footer">
+          
+            
+          
+          <div class="post-tags">
+            
+              <a href="/tags/Redis/" rel="tag"><i class="fa fa-tag"></i> Redis</a>
+            
+              <a href="/tags/RDB/" rel="tag"><i class="fa fa-tag"></i> RDB</a>
+            
+              <a href="/tags/AOF/" rel="tag"><i class="fa fa-tag"></i> AOF</a>
+            
+              <a href="/tags/主从复制/" rel="tag"><i class="fa fa-tag"></i> 主从复制</a>
+            
+          </div>
+        
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+              
+                <a href="/2020/07/16/Redis事务及其在Java中的实现/" rel="next" title="Redis事务及其在Java中的实现">
+                  <i class="fa fa-chevron-left"></i> Redis事务及其在Java中的实现
+                </a>
+              
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+              
+            </div>
+          </div>
+        
+      </footer>
+    
+  </div>
+  
+  
+  
+  </article>
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+        
+        
+        
+        
+      
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Redis-conf详解"><span class="nav-text">Redis.conf详解</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#单位"><span class="nav-text">单位</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#包含"><span class="nav-text">包含</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#网络"><span class="nav-text">网络</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#通用"><span class="nav-text">通用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#快照"><span class="nav-text">快照</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#安全"><span class="nav-text">安全</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#客户端限制"><span class="nav-text">客户端限制</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#AOF配置"><span class="nav-text">AOF配置</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Redis持久化"><span class="nav-text">Redis持久化</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#RDB-Redis-DataBase"><span class="nav-text">RDB(Redis DataBase)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#AOF-Append-Only-File"><span class="nav-text">AOF(Append Only File)</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Redis发布订阅"><span class="nav-text">Redis发布订阅</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#测试"><span class="nav-text">测试</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#原理"><span class="nav-text">原理</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Redis主从复制"><span class="nav-text">Redis主从复制</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#概念"><span class="nav-text">概念</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#环境配置"><span class="nav-text">环境配置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#一主二从"><span class="nav-text">一主二从</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#毛毛虫型模型"><span class="nav-text">毛毛虫型模型</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#哨兵模式"><span class="nav-text">哨兵模式</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#概述"><span class="nav-text">概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#测试-1"><span class="nav-text">测试</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Redis缓存穿透和雪崩"><span class="nav-text">Redis缓存穿透和雪崩</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#缓存穿透"><span class="nav-text">缓存穿透</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#缓存击穿"><span class="nav-text">缓存击穿</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#缓存雪崩"><span class="nav-text">缓存雪崩</span></a></li></ol></li></ol></div>
+        
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image"
+      src="/images/touxiang.jpg"
+      alt="liljungege">
+  <p class="site-author-name" itemprop="name">liljungege</p>
+  <div class="site-description" itemprop="description">珍惜当下，展望未来</div>
+</div>
+  <nav class="site-state motion-element">
+      <div class="site-state-item site-state-posts">
+        
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">6</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+    
+      
+      
+      <div class="site-state-item site-state-categories">
+        
+          
+            <a href="/categories/">
+          
+        
+        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-name">分类</span>
+        </a>
+      </div>
+    
+      
+      
+      <div class="site-state-item site-state-tags">
+        
+          
+            <a href="/tags/">
+          
+        
+        <span class="site-state-item-count">12</span>
+        <span class="site-state-item-name">标签</span>
+        </a>
+      </div>
+    
+  </nav>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+      
+      
+        
+      
+      
+        
+      
+        <a href="https://github.com/liljungege" title="GitHub &rarr; https://github.com/liljungege" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+    
+      <span class="links-of-author-item">
+      
+      
+        
+      
+      
+        
+      
+        <a href="mailto:2857499037@qq.com" title="E-Mail &rarr; mailto:2857499037@qq.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+    
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2019 – <span itemprop="copyrightYear">2020</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">liljungege</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动 v3.9.0</div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">主题 – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> v7.4.0</div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+
+
+    
+  
+  <script color='0,0,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js?v=3.1.0"></script>
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js?v=7.4.0"></script><script src="/js/motion.js?v=7.4.0"></script>
+<script src="/js/schemes/pisces.js?v=7.4.0"></script>
+<script src="/js/next-boot.js?v=7.4.0"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+</body>
+</html>
